@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#6750a4" />
+    <meta
+      name="description"
+      content="Интерактивная рулетка сервисов и игр — демо в Material Design."
+    />
+    <title>Выбор дня — рулетка сервисов</title>
+    <link rel="preconnect" href="https://cdn.simpleicons.org" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0..200"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient--one"></div>
+    <div class="ambient ambient--two"></div>
+
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Выбор дня — на главную">
+        <span class="brand__mark"><span class="material-symbols-rounded">casino</span></span>
+        <span>Выбор дня</span>
+      </a>
+      <div class="topbar__actions">
+        <button class="icon-button" id="soundButton" type="button" aria-label="Включить звук" aria-pressed="false">
+          <span class="material-symbols-rounded">volume_off</span>
+        </button>
+        <button class="icon-button" id="themeButton" type="button" aria-label="Переключить тему">
+          <span class="material-symbols-rounded">dark_mode</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="pageTitle">
+        <div class="hero__copy">
+          <p class="eyebrow"><span></span> случайный выбор</p>
+          <h1 id="pageTitle">Кому сегодня<br />достаться?</h1>
+          <p class="hero__description">
+            Рулетка выберет один настоящий сервис или игру. Затем решишь, что делать с его доступом.
+          </p>
+          <div class="hero__stats" aria-label="Статистика рулетки">
+            <div><strong>12</strong><span>брендов</span></div>
+            <div><strong>3</strong><span>решения</span></div>
+            <div><strong>10K+</strong><span>награда</span></div>
+          </div>
+        </div>
+        <div class="hero__orb" aria-hidden="true">
+          <div class="hero__orb-ring"></div>
+          <div class="hero__orb-core"><span class="material-symbols-rounded">casino</span></div>
+          <span class="orb-dot orb-dot--one"></span><span class="orb-dot orb-dot--two"></span><span class="orb-dot orb-dot--three"></span>
+        </div>
+      </section>
+
+      <section class="game-card" aria-label="Рулетка сервисов">
+        <div class="game-card__header">
+          <div>
+            <p class="section-kicker">Раунд <span id="roundNumber">01</span></p>
+            <h2>Запусти рулетку</h2>
+          </div>
+          <div class="balance"><span class="material-symbols-rounded">account_balance_wallet</span><span id="balance">0 ₽</span></div>
+        </div>
+
+        <div class="reel-shell">
+          <div class="reel-fade reel-fade--left"></div>
+          <div class="reel-fade reel-fade--right"></div>
+          <div class="selection-line" aria-hidden="true"><i></i></div>
+          <div id="reel" class="reel" aria-live="polite"></div>
+        </div>
+
+        <div class="game-card__footer">
+          <div id="instruction" class="instruction"><span class="material-symbols-rounded">touch_app</span> Нажми, чтобы узнать выбор</div>
+          <button id="spinButton" class="primary-button" type="button">
+            <span class="material-symbols-rounded">autorenew</span>
+            <span>Крутить рулетку</span>
+          </button>
+        </div>
+      </section>
+
+      <section id="decisionPanel" class="decision-panel" hidden aria-live="polite">
+        <div class="result-heading">
+          <p class="section-kicker">Выпало</p>
+          <h2 id="resultName">—</h2>
+          <p id="resultDescription">—</p>
+        </div>
+        <div class="decision-grid">
+          <button class="decision-card decision-card--block" type="button" data-action="block">
+            <span class="decision-card__icon material-symbols-rounded">block</span>
+            <span class="decision-card__body"><strong>Заблокировать</strong><small>Жёсткое решение</small></span>
+            <span class="decision-card__reward">+<span data-reward="block">0</span> ₽</span>
+          </button>
+          <button class="decision-card decision-card--slow" type="button" data-action="slow">
+            <span class="decision-card__icon material-symbols-rounded">slow_motion_video</span>
+            <span class="decision-card__body"><strong>Замедлить</strong><small>Оставить шанс</small></span>
+            <span class="decision-card__reward">+<span data-reward="slow">0</span> ₽</span>
+          </button>
+          <button class="decision-card decision-card--forgive" type="button" data-action="forgive">
+            <span class="decision-card__icon material-symbols-rounded">favorite</span>
+            <span class="decision-card__body"><strong>Простить</strong><small>Пусть остаётся</small></span>
+            <span class="decision-card__reward">+<span data-reward="forgive">0</span> ₽</span>
+          </button>
+        </div>
+      </section>
+
+      <section id="completePanel" class="complete-panel" hidden aria-live="polite">
+        <div class="complete-panel__badge"><span class="material-symbols-rounded">verified</span></div>
+        <div>
+          <p class="section-kicker">Решение принято</p>
+          <h2 id="completeTitle">Готово!</h2>
+          <p id="completeText"></p>
+        </div>
+        <button id="againButton" class="outlined-button" type="button"><span class="material-symbols-rounded">replay</span> Ещё раунд</button>
+      </section>
+
+      <p class="disclaimer"><span class="material-symbols-rounded">info</span> Демонстрационный интерфейс: сервисы не подключены, а награды — игровые баллы без денежных выплат.</p>
+    </main>
+
+    <template id="reelItemTemplate">
+      <article class="reel-item">
+        <div class="logo-wrap"><img class="service-logo" alt="" /><span class="logo-fallback"></span></div>
+        <p class="reel-item__type"></p>
+        <h3 class="reel-item__name"></h3>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
