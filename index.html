@@ -64,7 +64,10 @@
             <p class="section-kicker">Раунд <span id="roundNumber">01</span></p>
             <h2>Запусти рулетку</h2>
           </div>
-          <div class="balance"><span class="material-symbols-rounded">account_balance_wallet</span><span id="balance">0 ₽</span></div>
+          <div class="game-card__meta">
+            <div class="blocked-chip"><span class="material-symbols-rounded">gpp_bad</span><span>В твоём бане: <b id="blockedCount">0</b></span></div>
+            <div class="balance"><span class="material-symbols-rounded">account_balance_wallet</span><span id="balance">0 ₽</span></div>
+          </div>
         </div>
 
         <div class="reel-shell">
@@ -118,7 +121,20 @@
         <button id="againButton" class="outlined-button" type="button"><span class="material-symbols-rounded">replay</span> Ещё раунд</button>
       </section>
 
-      <p class="disclaimer"><span class="material-symbols-rounded">info</span> Демонстрационный интерфейс: сервисы не подключены, а награды — игровые баллы без денежных выплат.</p>
+      <section class="unlock-store" aria-labelledby="storeTitle">
+        <div class="unlock-store__header">
+          <div>
+            <p class="section-kicker">Витрина разблокировки</p>
+            <h2 id="storeTitle">Сервисы с ограниченным доступом</h2>
+            <p>Трать игровые баллы на символическое «разблокирование» сервисов из публично подтверждённых сообщений об ограничении доступа.</p>
+          </div>
+          <div class="store-balance"><span class="material-symbols-rounded">payments</span><span id="storeBalance">0 ₽</span></div>
+        </div>
+        <div id="rknStore" class="unlock-grid" aria-live="polite"></div>
+        <p class="store-note"><span class="material-symbols-rounded">verified_user</span> Игровая цена — авторская шкала по описанию оснований в источниках, а не штраф или оценка госоргана. Никакие сервисы в реальности не разблокируются.</p>
+      </section>
+
+      <p class="disclaimer"><span class="material-symbols-rounded">info</span> Демо-интерфейс: сервисы не подключены, награды — игровые баллы без денежных выплат, а прогресс сохраняется только в localStorage этого браузера.</p>
     </main>
 
     <template id="reelItemTemplate">

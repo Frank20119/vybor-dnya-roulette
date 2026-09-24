@@ -37,19 +37,77 @@ const catalog = [
   { name: 'GeForce NOW', type: 'Игры', slug: 'nvidia', color: '76B900', description: 'облачный гейминг' }
 ];
 
-let services = [...catalog];
+const rknCatalog = [
+  {
+    id: 'linkedin', name: 'LinkedIn', type: 'Соцсеть', slug: 'linkedin', color: '0A66C2', level: 'I', levelColor: '#5f68d9', cost: 18000,
+    reason: 'Основание из судебного сообщения: обработка персональных данных с нарушениями.',
+    sourceLabel: 'Мосгорсуд · 2016', sourceUrl: 'https://mos-gorsud.ru/mgs/news/e5825bb6-d15d-4512-a158-bdfdb910e82c'
+  },
+  {
+    id: 'viber', name: 'Viber', type: 'Мессенджер', slug: 'viber', color: '7360F2', level: 'II', levelColor: '#8266d7', cost: 35000,
+    reason: 'В сообщении РКН — нарушение требований к организаторам распространения информации.',
+    sourceLabel: 'РБК · 13.12.2024', sourceUrl: 'https://www.rbc.ru/technology_and_media/13/12/2024/675c690f9a79472300a900a9'
+  },
+  {
+    id: 'signal', name: 'Signal', type: 'Мессенджер', slug: 'signal', color: '3A76F0', level: 'III', levelColor: '#bc7b28', cost: 55000,
+    reason: 'В сообщении РКН — требования, связанные с предотвращением терроризма и экстремизма.',
+    sourceLabel: 'Интерфакс · 09.08.2024', sourceUrl: 'https://interfax.com/newsroom/top-stories/105001/'
+  },
+  {
+    id: 'discord', name: 'Discord', type: 'Мессенджер', slug: 'discord', color: '5865F2', level: 'IV', levelColor: '#b34342', cost: 75000,
+    reason: 'В сообщении РКН — неоднократные нарушения и запрещённая информация.',
+    sourceLabel: 'Интерфакс · 2024', sourceUrl: 'https://www.interfax.ru/amp/986204'
+  },
+  {
+    id: 'facebook', name: 'Facebook', type: 'Соцсеть', slug: 'facebook', color: '1877F2', level: 'V', levelColor: '#922f38', cost: 90000,
+    reason: 'Генпрокуратура сообщала о требовании ограничить доступ к Facebook и Instagram.',
+    sourceLabel: 'Генпрокуратура · 2022', sourceUrl: 'https://epp.genproc.gov.ru/ru/gprf/mass-media/news/main/e480099/'
+  },
+  {
+    id: 'instagram', name: 'Instagram', type: 'Соцсеть', slug: 'instagram', color: 'E4405F', level: 'V', levelColor: '#922f38', cost: 90000,
+    reason: 'Генпрокуратура сообщала о требовании ограничить доступ к Instagram и Facebook.',
+    sourceLabel: 'Генпрокуратура · 2022', sourceUrl: 'https://epp.genproc.gov.ru/ru/gprf/mass-media/news/main/e480099/'
+  }
+];
+
+const STORAGE_KEY = 'choice-day-progress-v2';
+
+function loadProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!saved || typeof saved !== 'object') throw new Error('No saved progress');
+    return {
+      balance: Number.isFinite(saved.balance) && saved.balance >= 0 ? saved.balance : 0,
+      round: Number.isInteger(saved.round) && saved.round > 0 ? saved.round : 1,
+      removed: Array.isArray(saved.removed) ? saved.removed.filter((name) => typeof name === 'string') : [],
+      blocked: Array.isArray(saved.blocked) ? saved.blocked.filter((name) => typeof name === 'string') : [],
+      unlocked: Array.isArray(saved.unlocked) ? saved.unlocked.filter((id) => typeof id === 'string') : []
+    };
+  } catch {
+    return { balance: 0, round: 1, removed: [], blocked: [], unlocked: [] };
+  }
+}
+
+const savedProgress = loadProgress();
+let removedByUser = [...new Set(savedProgress.removed)];
+let blockedByUser = [...new Set(savedProgress.blocked)];
+let unlockedRkn = [...new Set(savedProgress.unlocked)];
+let services = catalog.filter((service) => !removedByUser.includes(service.name));
 
 const actionLabels = { block: 'заблокировать', slow: 'замедлить', forgive: 'простить' };
 const actionMultipliers = { block: 1, slow: 0.72, forgive: 0.48 };
 const reel = document.querySelector('#reel');
 const reelShell = document.querySelector('.reel-shell');
 const brandCount = document.querySelector('#brandCount');
+const blockedCount = document.querySelector('#blockedCount');
 const spinButton = document.querySelector('#spinButton');
 const decisionPanel = document.querySelector('#decisionPanel');
 const completePanel = document.querySelector('#completePanel');
 const instruction = document.querySelector('#instruction');
 const roundNumber = document.querySelector('#roundNumber');
 const balance = document.querySelector('#balance');
+const storeBalance = document.querySelector('#storeBalance');
+const rknStore = document.querySelector('#rknStore');
 const resultName = document.querySelector('#resultName');
 const resultDescription = document.querySelector('#resultDescription');
 const soundButton = document.querySelector('#soundButton');
@@ -58,8 +116,8 @@ const themeButton = document.querySelector('#themeButton');
 let spinning = false;
 let currentService = null;
 let currentRewards = null;
-let round = 1;
-let total = 0;
+let round = savedProgress.round;
+let total = savedProgress.balance;
 let soundOn = false;
 let audioContext;
 let currentItemIndex = 0;
@@ -80,6 +138,13 @@ function makeReelItem(service) {
 }
 
 function fillReel() {
+  if (services.length === 0) {
+    reel.replaceChildren();
+    spinButton.disabled = false;
+    spinButton.querySelector('span:last-child').textContent = 'Собрать новую очередь';
+    instruction.innerHTML = '<span class="material-symbols-rounded">playlist_add</span> Все сервисы уже отмечены';
+    return;
+  }
   reel.replaceChildren();
   const visibleList = Array.from({ length: REEL_CYCLES }, () => services).flat();
   visibleList.forEach((service) => reel.append(makeReelItem(service)));
@@ -90,6 +155,24 @@ function fillReel() {
 
 function updateBrandCount() {
   brandCount.textContent = String(services.length);
+}
+
+function updateProgressUi() {
+  balance.textContent = `${money(total)} ₽`;
+  storeBalance.textContent = `${money(total)} ₽`;
+  blockedCount.textContent = String(blockedByUser.length);
+  roundNumber.textContent = String(round).padStart(2, '0');
+  updateBrandCount();
+}
+
+function saveProgress() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    balance: total,
+    round,
+    removed: removedByUser,
+    blocked: blockedByUser,
+    unlocked: unlockedRkn
+  }));
 }
 
 function getReelMetrics() {
@@ -127,6 +210,50 @@ function setRewards(service) {
   resultDescription.textContent = service.description;
 }
 
+function renderRknStore() {
+  rknStore.replaceChildren();
+  rknCatalog.forEach((service) => {
+    const unlocked = unlockedRkn.includes(service.id);
+    const card = document.createElement('article');
+    card.className = `unlock-card${unlocked ? ' unlock-card--unlocked' : ''}`;
+    card.innerHTML = `
+      <div class="unlock-card__top">
+        <div class="unlock-card__brand">
+          <div class="logo-wrap"><img class="service-logo" alt="Логотип ${service.name}"><span class="logo-fallback">${service.name.charAt(0)}</span></div>
+          <div><h3>${service.name}</h3><p>${service.type}</p></div>
+        </div>
+        <span class="severity" style="--severity-color: ${service.levelColor}" title="Игровой уровень основания">${service.level}</span>
+      </div>
+      <p class="unlock-card__reason">${service.reason}</p>
+      <a class="unlock-card__source" href="${service.sourceUrl}" target="_blank" rel="noopener noreferrer"><span class="material-symbols-rounded">open_in_new</span>${service.sourceLabel}</a>
+      <div class="unlock-card__footer"><span class="unlock-card__price">${money(service.cost)} ₽</span></div>
+    `;
+    const logo = card.querySelector('.service-logo');
+    logo.src = `https://cdn.simpleicons.org/${service.slug}/${service.color}`;
+    logo.addEventListener('error', () => { logo.hidden = true; });
+    const footer = card.querySelector('.unlock-card__footer');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `unlock-button${unlocked ? ' unlock-button--done' : ''}`;
+    button.textContent = unlocked ? 'Разблокировано в демо' : `Разблокировать за ${money(service.cost)} ₽`;
+    button.disabled = unlocked || total < service.cost;
+    button.addEventListener('click', () => unlockRknService(service.id));
+    footer.append(button);
+    rknStore.append(card);
+  });
+}
+
+function unlockRknService(id) {
+  const service = rknCatalog.find((item) => item.id === id);
+  if (!service || unlockedRkn.includes(id) || total < service.cost) return;
+  total -= service.cost;
+  unlockedRkn.push(id);
+  updateProgressUi();
+  saveProgress();
+  renderRknStore();
+  playTone(690, .22, .045);
+}
+
 function playTone(frequency, duration, volume = 0.025) {
   if (!soundOn) return;
   audioContext ??= new AudioContext();
@@ -143,6 +270,16 @@ function playTone(frequency, duration, volume = 0.025) {
 
 function spin() {
   if (spinning) return;
+  if (services.length === 0) {
+    removedByUser = [];
+    services = [...catalog];
+    round = 1;
+    fillReel();
+    updateProgressUi();
+    saveProgress();
+    spinButton.querySelector('span:last-child').textContent = 'Крутить рулетку';
+    return;
+  }
   spinning = true;
   decisionPanel.hidden = true;
   completePanel.hidden = true;
@@ -182,18 +319,22 @@ function chooseAction(event) {
   const action = button.dataset.action;
   const reward = currentRewards[action];
   total += reward;
-  balance.textContent = `${money(total)} ₽`;
+  if (!removedByUser.includes(currentService.name)) removedByUser.push(currentService.name);
+  if (action === 'block' && !blockedByUser.includes(currentService.name)) blockedByUser.push(currentService.name);
   services = services.filter((service) => service.name !== currentService.name);
-  updateBrandCount();
+  updateProgressUi();
+  saveProgress();
+  renderRknStore();
   document.querySelector('#completeTitle').textContent = `+${money(reward)} ₽ в этом раунде`;
-  document.querySelector('#completeText').textContent = `${currentService.name}: решение «${actionLabels[action]}» сохранено. Этот сервис больше не выпадет в следующих раундах.`;
+  document.querySelector('#completeText').textContent = `${currentService.name}: решение «${actionLabels[action]}» сохранено в localStorage. Этот сервис больше не выпадет в следующих раундах.`;
   if (services.length === 0) {
     document.querySelector('#againButton').innerHTML = '<span class="material-symbols-rounded">restart_alt</span> Начать заново';
   }
   decisionPanel.hidden = true;
   completePanel.hidden = false;
   round += 1;
-  roundNumber.textContent = String(round).padStart(2, '0');
+  updateProgressUi();
+  saveProgress();
   instruction.innerHTML = '<span class="material-symbols-rounded">task_alt</span> Раунд завершён';
   playTone(770, .32, .045);
 }
@@ -201,11 +342,10 @@ function chooseAction(event) {
 function startAgain() {
   if (services.length === 0) {
     services = [...catalog];
-    total = 0;
+    removedByUser = [];
     round = 1;
-    balance.textContent = '0 ₽';
-    roundNumber.textContent = '01';
-    updateBrandCount();
+    updateProgressUi();
+    saveProgress();
     document.querySelector('#againButton').innerHTML = '<span class="material-symbols-rounded">replay</span> Ещё раунд';
   }
   fillReel();
@@ -231,7 +371,8 @@ function changeSound() {
 }
 
 fillReel();
-updateBrandCount();
+updateProgressUi();
+renderRknStore();
 window.addEventListener('resize', () => {
   if (!spinning) positionReel(currentItemIndex);
 });
