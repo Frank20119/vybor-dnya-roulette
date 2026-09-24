@@ -10,12 +10,37 @@ const services = [
   { name: 'Twitch', type: 'Стриминг', slug: 'twitch', color: '9146FF', description: 'стримы и киберспорт' },
   { name: 'Epic Games', type: 'Игры', slug: 'epicgames', color: '313131', description: 'игровая библиотека' },
   { name: 'Telegram', type: 'Сервис', slug: 'telegram', color: '26A5E4', description: 'мессенджер' },
-  { name: 'VK Музыка', type: 'Музыка', slug: 'vk', color: '0077FF', description: 'треков и плейлистов' }
+  { name: 'VK Музыка', type: 'Музыка', slug: 'vk', color: '0077FF', description: 'треков и плейлистов' },
+  { name: 'Prime Video', type: 'Стриминг', slug: 'primevideo', color: '00A8E1', description: 'фильмы Prime' },
+  { name: 'Max', type: 'Стриминг', slug: 'max', color: '1B2CC1', description: 'сериалы и кино' },
+  { name: 'Crunchyroll', type: 'Стриминг', slug: 'crunchyroll', color: 'F47521', description: 'аниме и манга' },
+  { name: 'Кинопоиск', type: 'Стриминг', slug: 'kinopoisk', color: 'FF5C00', description: 'кино и сериалы' },
+  { name: 'IVI', type: 'Стриминг', slug: 'ivi', color: 'EA1F63', description: 'онлайн-кинотеатр' },
+  { name: 'Okko', type: 'Стриминг', slug: 'okko', color: '131313', description: 'фильмы и спорт' },
+  { name: 'START', type: 'Стриминг', slug: 'start', color: 'FF0050', description: 'сериалы START' },
+  { name: 'Wink', type: 'Стриминг', slug: 'wink', color: 'FF5F00', description: 'ТВ и кино' },
+  { name: 'KION', type: 'Стриминг', slug: 'kion', color: 'A626E8', description: 'контент МТС' },
+  { name: 'Яндекс Плюс', type: 'Сервис', slug: 'yandex', color: 'FC3F1D', description: 'подписка Яндекса' },
+  { name: 'Roblox', type: 'Игра', slug: 'roblox', color: '111111', description: 'игры и миры' },
+  { name: 'Fortnite', type: 'Игра', slug: 'fortnite', color: '000000', description: 'королевская битва' },
+  { name: 'Minecraft', type: 'Игра', slug: 'minecraft', color: '62B47A', description: 'мир из блоков' },
+  { name: 'League of Legends', type: 'Игра', slug: 'leagueoflegends', color: 'C89B3C', description: 'командная MOBA' },
+  { name: 'Dota 2', type: 'Игра', slug: 'dota2', color: 'B12A1C', description: 'легендарная MOBA' },
+  { name: 'Genshin Impact', type: 'Игра', slug: 'genshinimpact', color: '4B75B4', description: 'приключение Teyvat' },
+  { name: 'Valorant', type: 'Игра', slug: 'valorant', color: 'FF4655', description: 'тактический шутер' },
+  { name: 'Counter-Strike 2', type: 'Игра', slug: 'counterstrike', color: 'D69A2D', description: 'командный шутер' },
+  { name: 'World of Warcraft', type: 'Игра', slug: 'worldofwarcraft', color: '148EFF', description: 'мир Азерота' },
+  { name: 'EA Play', type: 'Игры', slug: 'ea', color: 'FF4747', description: 'игры Electronic Arts' },
+  { name: 'Ubisoft+', type: 'Игры', slug: 'ubisoft', color: '0070FF', description: 'игры Ubisoft' },
+  { name: 'Nintendo Switch Online', type: 'Игры', slug: 'nintendoswitch', color: 'E60012', description: 'игры Nintendo' },
+  { name: 'Discord Nitro', type: 'Сервис', slug: 'discord', color: '5865F2', description: 'сообщества и звонки' },
+  { name: 'GeForce NOW', type: 'Игры', slug: 'nvidia', color: '76B900', description: 'облачный гейминг' }
 ];
 
 const actionLabels = { block: 'заблокировать', slow: 'замедлить', forgive: 'простить' };
 const actionMultipliers = { block: 1, slow: 0.72, forgive: 0.48 };
 const reel = document.querySelector('#reel');
+const reelShell = document.querySelector('.reel-shell');
 const spinButton = document.querySelector('#spinButton');
 const decisionPanel = document.querySelector('#decisionPanel');
 const completePanel = document.querySelector('#completePanel');
@@ -34,6 +59,9 @@ let round = 1;
 let total = 0;
 let soundOn = false;
 let audioContext;
+let currentItemIndex = 0;
+const REEL_CYCLES = 18;
+const START_CYCLE = 2;
 
 function makeReelItem(service) {
   const node = document.querySelector('#reelItemTemplate').content.firstElementChild.cloneNode(true);
@@ -49,8 +77,29 @@ function makeReelItem(service) {
 }
 
 function fillReel() {
-  const visibleList = Array.from({ length: 7 }, () => services).flat();
+  reel.replaceChildren();
+  const visibleList = Array.from({ length: REEL_CYCLES }, () => services).flat();
   visibleList.forEach((service) => reel.append(makeReelItem(service)));
+  currentItemIndex = START_CYCLE * services.length + Math.floor(Math.random() * services.length);
+  reel.style.transition = 'none';
+  positionReel(currentItemIndex);
+}
+
+function getReelMetrics() {
+  const firstCard = reel.firstElementChild;
+  const cardWidth = firstCard?.getBoundingClientRect().width ?? 150;
+  const gap = Number.parseFloat(getComputedStyle(reel).gap) || 12;
+  return { cardWidth, gap, shellWidth: reelShell.clientWidth };
+}
+
+function positionReel(itemIndex) {
+  const { cardWidth, gap, shellWidth } = getReelMetrics();
+  const itemCenter = itemIndex * (cardWidth + gap) + cardWidth / 2;
+  reel.style.transform = `translateX(${Math.round(shellWidth / 2 - itemCenter)}px)`;
+}
+
+function clearSelectedCard() {
+  reel.querySelector('.reel-item--selected')?.classList.remove('reel-item--selected');
 }
 
 function money(value) {
@@ -93,22 +142,24 @@ function spin() {
   spinButton.disabled = true;
   spinButton.querySelector('span:last-child').textContent = 'Рулетка крутится…';
   instruction.innerHTML = '<span class="material-symbols-rounded">hourglass_top</span> Выбираем сервис…';
-  reel.style.transition = 'none';
-  reel.style.transform = 'translateX(-50%)';
-
   const selectedIndex = Math.floor(Math.random() * services.length);
   currentService = services[selectedIndex];
-  const itemWidth = window.innerWidth <= 700 ? 142 : 162;
-  const targetIndex = services.length * 5 + selectedIndex;
-  const offset = targetIndex * itemWidth;
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    reel.style.transition = 'transform 3.7s cubic-bezier(.10,.78,.13,1)';
-    reel.style.transform = `translateX(calc(-50% - ${offset}px))`;
-  }));
+  clearSelectedCard();
+
+  // When the virtual strip approaches its end, start a fresh long strip before spinning.
+  // It prevents empty space from ever entering the window, even after many rounds.
+  if (currentItemIndex > (REEL_CYCLES - 7) * services.length) fillReel();
+
+  const minimumTarget = currentItemIndex + services.length * 5;
+  const targetIndex = minimumTarget + ((selectedIndex - (minimumTarget % services.length) + services.length) % services.length);
+  reel.style.transition = 'transform 5.2s cubic-bezier(.07,.82,.08,1)';
+  requestAnimationFrame(() => positionReel(targetIndex));
   playTone(280, .16);
 
   window.setTimeout(() => {
     spinning = false;
+    currentItemIndex = targetIndex;
+    reel.children[targetIndex]?.classList.add('reel-item--selected');
     setRewards(currentService);
     decisionPanel.hidden = false;
     decisionPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -116,7 +167,7 @@ function spin() {
     spinButton.querySelector('span:last-child').textContent = 'Крутить рулетку';
     instruction.innerHTML = '<span class="material-symbols-rounded">arrow_downward</span> Выбери действие для результата';
     playTone(620, .24, .04);
-  }, 3850);
+  }, 5300);
 }
 
 function chooseAction(event) {
@@ -158,6 +209,9 @@ function changeSound() {
 }
 
 fillReel();
+window.addEventListener('resize', () => {
+  if (!spinning) positionReel(currentItemIndex);
+});
 if (localStorage.getItem('choice-day-theme') === 'dark') changeTheme();
 spinButton.addEventListener('click', spin);
 document.querySelectorAll('.decision-card').forEach((button) => button.addEventListener('click', chooseAction));
