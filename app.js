@@ -1,4 +1,4 @@
-const services = [
+const catalog = [
   { name: 'Netflix', type: 'Стриминг', slug: 'netflix', color: 'E50914', description: 'фильмы и сериалы' },
   { name: 'Spotify', type: 'Музыка', slug: 'spotify', color: '1DB954', description: 'музыка и подкасты' },
   { name: 'Steam', type: 'Игры', slug: 'steam', color: '171A21', description: 'игры для ПК' },
@@ -37,10 +37,13 @@ const services = [
   { name: 'GeForce NOW', type: 'Игры', slug: 'nvidia', color: '76B900', description: 'облачный гейминг' }
 ];
 
+let services = [...catalog];
+
 const actionLabels = { block: 'заблокировать', slow: 'замедлить', forgive: 'простить' };
 const actionMultipliers = { block: 1, slow: 0.72, forgive: 0.48 };
 const reel = document.querySelector('#reel');
 const reelShell = document.querySelector('.reel-shell');
+const brandCount = document.querySelector('#brandCount');
 const spinButton = document.querySelector('#spinButton');
 const decisionPanel = document.querySelector('#decisionPanel');
 const completePanel = document.querySelector('#completePanel');
@@ -83,6 +86,10 @@ function fillReel() {
   currentItemIndex = START_CYCLE * services.length + Math.floor(Math.random() * services.length);
   reel.style.transition = 'none';
   positionReel(currentItemIndex);
+}
+
+function updateBrandCount() {
+  brandCount.textContent = String(services.length);
 }
 
 function getReelMetrics() {
@@ -176,8 +183,13 @@ function chooseAction(event) {
   const reward = currentRewards[action];
   total += reward;
   balance.textContent = `${money(total)} ₽`;
+  services = services.filter((service) => service.name !== currentService.name);
+  updateBrandCount();
   document.querySelector('#completeTitle').textContent = `+${money(reward)} ₽ в этом раунде`;
-  document.querySelector('#completeText').textContent = `${currentService.name}: решение «${actionLabels[action]}» сохранено в демо-игре.`;
+  document.querySelector('#completeText').textContent = `${currentService.name}: решение «${actionLabels[action]}» сохранено. Этот сервис больше не выпадет в следующих раундах.`;
+  if (services.length === 0) {
+    document.querySelector('#againButton').innerHTML = '<span class="material-symbols-rounded">restart_alt</span> Начать заново';
+  }
   decisionPanel.hidden = true;
   completePanel.hidden = false;
   round += 1;
@@ -187,6 +199,16 @@ function chooseAction(event) {
 }
 
 function startAgain() {
+  if (services.length === 0) {
+    services = [...catalog];
+    total = 0;
+    round = 1;
+    balance.textContent = '0 ₽';
+    roundNumber.textContent = '01';
+    updateBrandCount();
+    document.querySelector('#againButton').innerHTML = '<span class="material-symbols-rounded">replay</span> Ещё раунд';
+  }
+  fillReel();
   completePanel.hidden = true;
   decisionPanel.hidden = true;
   instruction.innerHTML = '<span class="material-symbols-rounded">touch_app</span> Нажми, чтобы узнать выбор';
@@ -209,6 +231,7 @@ function changeSound() {
 }
 
 fillReel();
+updateBrandCount();
 window.addEventListener('resize', () => {
   if (!spinning) positionReel(currentItemIndex);
 });
